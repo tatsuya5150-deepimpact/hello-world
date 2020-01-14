@@ -1,0 +1,115 @@
+# coding: utf-8
+# Your code here!
+
+# 盤上のステータス(0=未設置、1=黒、2=白)
+ban_state = {'not_set':0,'B':1,'W':2}
+# 走査方向のマップ
+direction_map = {'up':[-1,0],'up_right':[-1,1],'right':[0,1],'low_right':[1,1],'low':[1,0],'low_left':[1,-1],'left':[0,-1],'up_left':[-1,-1],}
+# 走査方向のひっくり返す個数のテンプレート
+direction_counter_tmp = {'up':0,'up_right':0,'right':0,'low_right':0,'low':0,'low_left':0,'left':0,'up_left':0,}
+# 盤を初期化
+ban = [[0 for i in range(8)] for j in range(8)]
+ban[3][3]=2
+ban[3][4]=1
+ban[4][3]=1
+ban[4][4]=2
+# 石のカウンター
+stone_counter = {'B':2,'W':2,'rev':{'B':'W','W':'B'}}
+# パスした時の情報を保持
+pass_stone = {'flg':False,'stone':'','x':0,'y':0}
+# 配置可能フラグ
+placeable_flg = {'B':True,'W':True}
+# 次のストーンを取得するか判断するフラグ
+next_flg = True
+# デバッグ用
+hogehoge_counter = 0
+# 裏返し制御ロジック
+def turn_over_logic(stone,x,y):
+    x -= 1
+    y -= 1
+    # ストーンがおかれた場所を更新
+    ban[x][y] = ban_state[stone]
+    # 現在のストーンがおけるか置けないかを判断するフラグ
+    stone_judg_flg = False
+    # 走査方向を順番に走査
+    for direction in direction_map:
+        # 現在地を初期化
+        direction_current = [x,y]
+        # ひっくり返す個数
+        counter = 0
+        while True:
+            # 走査方向のマップから現在地をインクリメント
+            direction_current[0] += direction_map[direction][0]
+            direction_current[1] += direction_map[direction][1]
+            if direction_current[0] >= 8 or direction_current[0] < 0 or direction_current[1] >= 8 or direction_current[1] < 0:
+                print(direction_current)
+                break
+            # 現在地の状態が同じストーンかつcounterが0より大きい(ひっくり返せる相手ストーンが存在する)場合
+            if ban[direction_current[0]][direction_current[1]] == ban_state[stone] and counter > 0:
+                print(stone)
+                print(direction,counter)
+                print('ひっくり返す前',stone_counter)
+                result()
+                # ストーンのカウンターを更新
+                stone_counter[stone] += counter
+                stone_counter[stone_counter['rev'][stone]] -= counter
+                # 現在地を初期化
+                direction_current = [x,y]
+                # 相手のストーンをひっくり返す
+                for i in range(counter):
+                    direction_current[0] += direction_map[direction][0]
+                    direction_current[1] += direction_map[direction][1]
+                    ban[direction_current[0]][direction_current[1]] = ban_state[stone]
+                # 現在のストーンがおけるか置けないかを判断するフラグを更新
+                if not stone_judg_flg:
+                    global hogehoge_counter
+                    hogehoge_counter += 1
+                    stone_judg_flg = True
+                break
+            # 現在地の状態が未設置の場合
+            elif ban[direction_current[0]][direction_current[1]] == 0:
+                break
+            # 現在地の状態が相手のストーンの場合はcountup
+            elif ban[direction_current[0]][direction_current[1]] != ban_state[stone]:
+                counter += 1
+    if stone_judg_flg:
+        stone_counter[stone] += 1
+    print('ひっくり返した後',stone_counter)
+    result()
+    return stone_judg_flg
+# 結果表示
+def result():
+    global hogehoge_counter
+    print('hogehoge_counter',hogehoge_counter)
+    print('{0:0=2}-{1:0=2} The {2} won!'.format(stone_counter['B'],stone_counter['W'],'black' if stone_counter['B'] > stone_counter['W'] else 'white'))
+    # 確認用盤表示
+    for result in ban:
+        print(''.join([str(n) for n in result]))
+
+play_count = int(input())
+for i in range(play_count):
+    # 次のストーンを取得
+    next_stone = [int(j) if j.isdecimal() else j for j in input().rstrip().split(' ') ]
+    stone_judg_flg = turn_over_logic(*next_stone)
+    placeable_flg[next_stone[0]] = stone_judg_flg
+    print(stone_judg_flg)
+    # どちらも置けない場合は処理終了
+    if not placeable_flg['B'] and not placeable_flg['W']:
+        break
+    # パスしたストーンを再度配置
+    passstone_judg_flg = True
+    if pass_stone['flg']:
+        passstone_judg_flg = turn_over_logic(*pass_stone.values())
+        if passstone_judg_flg:
+            print('hogehoge')
+            pass_stone['flg'] = False
+            pass_stone['stone'] = ''
+            pass_stone['x'] = 0
+            pass_stone['y'] = 0
+    if not stone_judg_flg:
+        print('hoge')
+        pass_stone['flg'] = True
+        pass_stone['stone'] = next_stone[0]
+        pass_stone['x'] = next_stone[1]
+        pass_stone['y'] = next_stone[2]
+result()
